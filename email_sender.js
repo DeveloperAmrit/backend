@@ -1,9 +1,30 @@
+// Import necessary modules
 const nodemailer = require('nodemailer');
-const fs = require('fs');
+const mongoose = require('mongoose');
 const cron = require('node-cron');
-const path = './scheduled_emails.json'; // Path to the JSON file where scheduled emails are stored
 require('dotenv').config();
+const moment = require('moment-timezone');
 
+
+// MongoDB connection
+const mongoURI = process.env.URI;
+mongoose.connect(mongoURI)
+    .then(() => console.log('Connected to MongoDB'))
+    .catch((err) => console.error('MongoDB connection error:', err));
+
+// Define a Mongoose schema and model for email schedules
+const emailScheduleSchema = new mongoose.Schema({
+    to_email: { type: String, required: true },
+    cc_emails: { type: [String], default: [] },
+    bcc_emails: { type: [String], default: [] },
+    subject: { type: String, required: true },
+    body: { type: String, required: true },
+    send_datetime: { type: Date, required: true },
+}, { timestamps: true });
+
+const EmailSchedule = mongoose.model('EmailSchedule', emailScheduleSchema);
+
+// Function to send an email
 async function sendEmail(toEmail, ccEmails, bccEmails, subject, body) {
     console.log("Triggered");
 
@@ -37,44 +58,25 @@ async function sendEmail(toEmail, ccEmails, bccEmails, subject, body) {
     }
 }
 
-
-
 // Function to check and send emails
-function checkAndSendEmails() {
-    try{
-        fs.readFile(path, 'utf8', (err, data) => {
-            if (err) {
-                console.error('Error reading scheduled emails:', err);
-                return;
-            }
-    
-            const emails = JSON.parse(data);
-    
-            let currentTime = new Date();
-            currentTime.setHours(currentTime.getHours() + 5); // Add 5 hours
-            currentTime.setMinutes(currentTime.getMinutes() + 30); // Add 30 minutes
-            let currentTime_ = currentTime.toISOString().slice(0, 16); // Format to 'YYYY-MM-DDTHH:MM'
-            
-            const emailsToKeep = emails.filter((email) => {
-                if (email.send_datetime === currentTime_) {
-                    sendEmail(email.to_email, email.cc_emails, email.bcc_emails, email.subject, email.body);
-                    return false; // Exclude this email from the new array
-                }
-                return true; // Keep other emails
-            });
+async function checkAndSendEmails() {
+    try {
+        const currentTime = moment().tz('Asia/Kolkata').startOf('minute'); // Adjust time zone
+        const currentTimeISO = currentTime.toISOString(); // Get the ISO string
 
-            fs.writeFile(path, JSON.stringify(emailsToKeep, null, 2), (err) => {
-                if (err) console.error('Error updating scheduled emails:', err);
-            });
+        // Fetch emails that need to be sent
+        const emailsToSend = await EmailSchedule.find({ send_datetime: { $lte: currentTimeISO } });
 
-        });
+        for (const email of emailsToSend) {
+            await sendEmail(email.to_email, email.cc_emails, email.bcc_emails, email.subject, email.body);
+
+            // Remove the email from the database after sending
+            await EmailSchedule.findByIdAndDelete(email._id);
+        }
+    } catch (error) {
+        console.error('Error checking and sending emails:', error);
     }
-    catch(err){
-        console.log("Json file is busy");
-        setTimeout(checkAndSendEmails,10000);
-    }
-    
 }
 
-// Schedule the job to run every minute
+// Schedule the job to run every minute (adjustable interval)
 cron.schedule('*/30 * * * * *', checkAndSendEmails); // Runs every 30 seconds
