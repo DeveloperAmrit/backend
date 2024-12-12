@@ -40,7 +40,7 @@ app.post("*", async (req, res) => {
 
     } catch (error) {
         console.error('Error processing the email schedule:', error);
-        res.status(500).json({ message: 'Failed to save schedule.' });
+        res.status(500).json({ message: 'Failed to save schedule.',error:`${error}`});
     }
 });
 
