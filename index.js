@@ -5,16 +5,9 @@ const app = express();
 const cors = require('cors');
 app.use(cors());
 app.use(express.json());
-const http = require('http');
 
-const server = http.createServer((req, res) => {
-    // Set the response header
-    res.writeHead(200, {'Content-Type': 'text/plain'});
-    // Write some text to the response
-    res.end('Welcome to my simple Node.js app!');
-});
 
-app.post('/schedule-email', async (req, res) => {
+app.post("*", async (req, res) => {
     const { to_email, cc_emails, bcc_emails, subject, body, send_datetime } = req.body;
 
     // Prepare the email schedule data
