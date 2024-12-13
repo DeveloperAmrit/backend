@@ -70,20 +70,6 @@ app.post("/schedule-email", async (req, res) => {
     }
 });
 
-// Start the server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server running on port http://localhost:${PORT}/`);
-    setInterval(()=>{
-        console.log("Set Interval working")
-        checkAndSendEmails();
-    },5000);
-});
-
-
-
-
-
 // Function to send an email
 async function sendEmail(toEmail, ccEmails, bccEmails, subject, body) {
     console.log("sendEmail function : Triggered sendEmail function");
@@ -156,4 +142,20 @@ async function checkAndSendEmails() {
     }
     console.log("checkAndSendEmails function : Check complete");
 }
+
+// Start the server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Server running on port http://localhost:${PORT}/`);
+    setInterval(()=>{
+        console.log("Set Interval working")
+        checkAndSendEmails();
+    },5000);
+});
+
+
+
+
+
+
 
