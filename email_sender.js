@@ -61,11 +61,14 @@ async function sendEmail(toEmail, ccEmails, bccEmails, subject, body) {
 // Function to check and send emails
 async function checkAndSendEmails() {
     try {
-        const currentTime = moment().tz('Asia/Kolkata').startOf('minute'); // Adjust time zone
-        const currentTimeISO = currentTime.toISOString(); // Get the ISO string
+            
+        let currentTime = new Date();
+        currentTime.setHours(currentTime.getHours() + 5); // Add 5 hours
+        currentTime.setMinutes(currentTime.getMinutes() + 30); // Add 30 minutes
+        let currentTime_ = currentTime.toISOString().slice(0, 16); // Format to 'YYYY-MM-DDTHH:MM'
 
         // Fetch emails that need to be sent
-        const emailsToSend = await EmailSchedule.find({ send_datetime: { $lte: currentTimeISO } });
+        const emailsToSend = await EmailSchedule.find({ send_datetime: { $lte: currentTime_ } });
 
         for (const email of emailsToSend) {
             await sendEmail(email.to_email, email.cc_emails, email.bcc_emails, email.subject, email.body);

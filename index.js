@@ -4,14 +4,15 @@ const express = require('express');
 const { spawn } = require('child_process');
 const cors = require('cors');
 const app = express();
+require('dotenv').config();
+
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-const username = "kittyamrit005";
-const password = "tmRNI8sLgU8qs1Gf";
-const uri = `mongodb+srv://${username}:${password}@cluster0.ckqo2.mongodb.net/?retryWrites=true&w=majority`;
+
+const uri =  process.env.URI;
 
 // MongoDB connection
 const mongoURI = uri;
@@ -67,7 +68,7 @@ app.listen(PORT, () => {
 
 // Function to start the email sender process
 const startEmailSender = () => {
-    const emailSenderProcess = spawn('node', ['email_sender.js']); // Adjust path if necessary
+    const emailSenderProcess = spawn('node', ['./email_sender.js']); // Adjust path if necessary
 
     emailSenderProcess.stdout.on('data', (data) => {
         console.log(`Email Sender Output: ${data}`);
