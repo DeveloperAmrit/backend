@@ -58,10 +58,11 @@ app.post("/schedule-email", async (req, res) => {
     console.log("app.log : ",scheduleData);
 
     try {
+        console.log("app.post : Scheduling email")
         // Save the new email schedule to the database
         const newEmailSchedule = new EmailSchedule(scheduleData);
         await newEmailSchedule.save();
-
+        console.log("app.post : Email scheduled successfully!")
         res.status(200).json({ message: 'Email scheduled successfully!' });
     } catch (error) {
         console.error('Error processing the email schedule:', error);
