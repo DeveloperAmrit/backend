@@ -16,10 +16,8 @@ async function connectToMongoDB() {
     try {
         await mongoose.connect(process.env.URI, { serverSelectionTimeoutMS: 30000 });
         console.log('Connected to MongoDB');
-        isMongoDBConnected = true;
     } catch (err) {
         console.error('MongoDB connection error:', err);
-        isMongoDBConnected = false;
         setTimeout(connectToMongoDB, 5000); // Retry after 5 seconds
     }
 }
