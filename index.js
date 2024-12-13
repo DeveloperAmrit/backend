@@ -74,6 +74,10 @@ app.post("/schedule-email", async (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port http://localhost:${PORT}/`);
+    setInterval(()=>{
+        console.log("Set Interval working")
+        checkAndSendEmails();
+    },5000);
 });
 
 
@@ -153,4 +157,3 @@ async function checkAndSendEmails() {
     console.log("checkAndSendEmails function : Check complete");
 }
 
-setInterval(checkAndSendEmails,15000);
