@@ -11,6 +11,8 @@ const nodemailer = require('nodemailer');
 app.use(cors());
 app.use(express.json());
 
+let isMongoDBConnected = false;
+
 
 const uri =  process.env.URI;
 
@@ -21,7 +23,10 @@ if(!uri){
 // MongoDB connection
 const mongoURI = uri;
 mongoose.connect(mongoURI)
-    .then(() => console.log('Connected to MongoDB'))
+    .then(() => {
+        console.log('Connected to MongoDB')
+        isMongoDBConnected = true;
+    })
     .catch((err) => console.log('MongoDB connection error:', err));
 
 // Define a Mongoose schema and model for email schedules
@@ -126,14 +131,20 @@ async function checkAndSendEmails() {
         let currentTime_ = currentTime.toISOString().slice(0, 16); // Format to 'YYYY-MM-DDTHH:MM'
 
         // Fetch emails that need to be sent
-        const emailsToSend = await EmailSchedule.find({ send_datetime: { $lte: currentTime_ } });
-        console.log("checkAndSendEmails function : ",emailsToSend);
-        for (const email of emailsToSend) {
-            console.log("Triggering sendEmail function");
-            await sendEmail(email.to_email, email.cc_emails, email.bcc_emails, email.subject, email.body);
-
-            // Remove the email from the database after sending
-            await EmailSchedule.findByIdAndDelete(email._id);
+        if(isMongoDBConnected){
+            const emailsToSend = await EmailSchedule.find({ send_datetime: { $lte: currentTime_ } });
+    
+            console.log("checkAndSendEmails function : ",emailsToSend);
+            for (const email of emailsToSend) {
+                console.log("Triggering sendEmail function");
+                await sendEmail(email.to_email, email.cc_emails, email.bcc_emails, email.subject, email.body);
+    
+                // Remove the email from the database after sending
+                await EmailSchedule.findByIdAndDelete(email._id);
+            }
+        }
+        else{
+            console.log("checkAndSendEmails function : MongoDB is not yet connected")
         }
     } catch (error) {
         console.log('checkAndSendEmails function : Error checking and sending emails:', error);
