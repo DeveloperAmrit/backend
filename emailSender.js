@@ -3,9 +3,6 @@ const nodemailer = require('nodemailer');
 require('dotenv').config();
 const mongoose = require('mongoose');
 
-console.log("corn invoked");
-
-
 async function connectToMongoDB() {
     try {
         await mongoose.connect(process.env.URI, { serverSelectionTimeoutMS: 30000 });
@@ -18,19 +15,9 @@ async function connectToMongoDB() {
     }
 }
 
-connectToMongoDB();
 
-// Define a Mongoose schema and model for email schedules
-const emailScheduleSchema = new mongoose.Schema({
-    to_email: { type: String, required: true },
-    cc_emails: { type: [String], default: '' },
-    bcc_emails: { type: [String], default: '' },
-    subject: { type: String, required: true },
-    body: { type: String, required: true },
-    send_datetime: { type: Date, required: true },
-}, { timestamps: true });
 
-const EmailSchedule = mongoose.model('EmailSchedule', emailScheduleSchema);
+
 
 
 async function sendEmail(toEmail, ccEmails, bccEmails, subject, body) {
@@ -75,6 +62,19 @@ async function sendEmail(toEmail, ccEmails, bccEmails, subject, body) {
 
 // Function to check and send emails
 async function checkAndSendEmails() {
+    
+    // Define a Mongoose schema and model for email schedules
+    const emailScheduleSchema = new mongoose.Schema({
+        to_email: { type: String, required: true },
+        cc_emails: { type: [String], default: '' },
+        bcc_emails: { type: [String], default: '' },
+        subject: { type: String, required: true },
+        body: { type: String, required: true },
+        send_datetime: { type: Date, required: true },
+    }, { timestamps: true });
+
+    const EmailSchedule = mongoose.model('EmailSchedule', emailScheduleSchema);
+
     console.log("checkAndSendEmails function : Checking for scheduled emails...")
     try {
             
@@ -108,8 +108,17 @@ async function checkAndSendEmails() {
 }
 
 
-async function triggerCheckAndSendEmails() {
-    await checkAndSendEmails();
-}
+export default function handler(req, res) {
+    console.log("Cron job invoked at:", new Date());
+    console.log("Processing function logic...");
+    
+    // Function logic here...
+    async function trigger() {
+        await connectToMongoDB();
+        await checkAndSendEmails();
+    }
 
-triggerCheckAndSendEmails();
+    trigger();
+
+    res.status(200).json({ message: "Function executed successfully!" });
+}
