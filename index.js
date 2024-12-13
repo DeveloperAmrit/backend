@@ -22,7 +22,7 @@ if(!uri){
 const mongoURI = uri;
 mongoose.connect(mongoURI)
     .then(() => console.log('Connected to MongoDB'))
-    .catch((err) => console.error('MongoDB connection error:', err));
+    .catch((err) => console.log('MongoDB connection error:', err));
 
 // Define a Mongoose schema and model for email schedules
 const emailScheduleSchema = new mongoose.Schema({
@@ -109,7 +109,7 @@ async function sendEmail(toEmail, ccEmails, bccEmails, subject, body) {
         await transporter.sendMail(mailOptions);
         console.log(`sendEmail function : Email sent to ${toEmail}`);
     } catch (error) {
-        console.error(`sendEmail function : Error sending email to ${toEmail}:`, error);
+        console.log(`sendEmail function : Error sending email to ${toEmail}:`, error);
     }
 }
 
@@ -134,7 +134,7 @@ async function checkAndSendEmails() {
             await EmailSchedule.findByIdAndDelete(email._id);
         }
     } catch (error) {
-        console.error('checkAndSendEmails function : Error checking and sending emails:', error);
+        console.log('checkAndSendEmails function : Error checking and sending emails:', error);
     }
     console.log("checkAndSendEmails function : Check complete");
 }
