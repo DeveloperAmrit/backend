@@ -32,8 +32,8 @@ mongoose.connect(mongoURI)
 // Define a Mongoose schema and model for email schedules
 const emailScheduleSchema = new mongoose.Schema({
     to_email: { type: String, required: true },
-    cc_emails: { type: [String], default: [] },
-    bcc_emails: { type: [String], default: [] },
+    cc_emails: { type: [String], default: '' },
+    bcc_emails: { type: [String], default: '' },
     subject: { type: String, required: true },
     body: { type: String, required: true },
     send_datetime: { type: Date, required: true },
