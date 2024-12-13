@@ -38,8 +38,8 @@ const EmailSchedule = mongoose.model('EmailSchedule', emailScheduleSchema);
 
 // Endpoint to schedule emails
 app.post("/schedule-email", async (req, res) => {
+    console.log("app.post : Request recieved");
     const { to_email, cc_emails, bcc_emails, subject, body, send_datetime } = req.body;
-
     // Prepare the email schedule data
     const scheduleData = {
         to_email,
@@ -49,6 +49,8 @@ app.post("/schedule-email", async (req, res) => {
         body,
         send_datetime,
     };
+
+    console.log("app.log : ",scheduleData);
 
     try {
         // Save the new email schedule to the database
@@ -125,7 +127,7 @@ async function checkAndSendEmails() {
 
         // Fetch emails that need to be sent
         const emailsToSend = await EmailSchedule.find({ send_datetime: { $lte: currentTime_ } });
-
+        console.log("checkAndSendEmails function : ",emailsToSend);
         for (const email of emailsToSend) {
             console.log("Triggering sendEmail function");
             await sendEmail(email.to_email, email.cc_emails, email.bcc_emails, email.subject, email.body);
