@@ -65,7 +65,7 @@ app.post("/schedule-email", async (req, res) => {
         console.log("app.post : Email scheduled successfully!")
         res.status(200).json({ message: 'Email scheduled successfully!' });
     } catch (error) {
-        console.error('Error processing the email schedule:', error);
+        console.log('Error processing the email schedule:', error);
         res.status(500).json({ message: 'Failed to save schedule.', error: `${error}` });
     }
 });
