@@ -1,10 +1,10 @@
 // Import necessary modules
 const mongoose = require('mongoose');
 const express = require('express');
-const { spawn } = require('child_process');
 const cors = require('cors');
 const app = express();
 require('dotenv').config();
+const nodemailer = require('nodemailer');
 
 
 // Middleware
@@ -13,6 +13,10 @@ app.use(express.json());
 
 
 const uri =  process.env.URI;
+
+if(!uri){
+    console.log("index.js : uri not found");
+}
 
 // MongoDB connection
 const mongoURI = uri;
@@ -62,23 +66,77 @@ app.post("/schedule-email", async (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port http://localhost:${PORT}/`);
-    startEmailSender();
-    console.log("Email sender started");
 });
 
-// Function to start the email sender process
-const startEmailSender = () => {
-    const emailSenderProcess = spawn('node', ['./email_sender.js']); // Adjust path if necessary
 
-    emailSenderProcess.stdout.on('data', (data) => {
-        console.log(`Email Sender Output: ${data}`);
+
+
+
+// Function to send an email
+async function sendEmail(toEmail, ccEmails, bccEmails, subject, body) {
+    console.log("sendEmail function : Triggered sendEmail function");
+
+
+    const loginEmail = process.env.EMAIL;
+    const password = process.env.PASSWORD;
+
+    if(!loginEmail || !password){
+        console.log("sendEmail function : Login email and password not found.");
+        return;
+    }
+
+    const transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false, // true for 465, false for other ports
+        auth: {
+            user: loginEmail,
+            pass: password,
+        },
     });
 
-    emailSenderProcess.stderr.on('data', (data) => {
-        console.error(`Email Sender Error: ${data}`);
-    });
+    const mailOptions = {
+        from: loginEmail,
+        to: toEmail,
+        cc: ccEmails,
+        bcc: bccEmails,
+        subject: subject,
+        text: body,
+    };
 
-    emailSenderProcess.on('close', (code) => {
-        console.log(`Email Sender process exited with code ${code}`);
-    });
-};
+    try {
+        console.log(`sendEmail function : Sending mail to ${toEmail}`);
+        await transporter.sendMail(mailOptions);
+        console.log(`sendEmail function : Email sent to ${toEmail}`);
+    } catch (error) {
+        console.error(`sendEmail function : Error sending email to ${toEmail}:`, error);
+    }
+}
+
+// Function to check and send emails
+async function checkAndSendEmails() {
+    console.log("checkAndSendEmails function : Checking for scheduled emails...")
+    try {
+            
+        let currentTime = new Date();
+        currentTime.setHours(currentTime.getHours() + 5); // Add 5 hours
+        currentTime.setMinutes(currentTime.getMinutes() + 30); // Add 30 minutes
+        let currentTime_ = currentTime.toISOString().slice(0, 16); // Format to 'YYYY-MM-DDTHH:MM'
+
+        // Fetch emails that need to be sent
+        const emailsToSend = await EmailSchedule.find({ send_datetime: { $lte: currentTime_ } });
+
+        for (const email of emailsToSend) {
+            console.log("Triggering sendEmail function");
+            await sendEmail(email.to_email, email.cc_emails, email.bcc_emails, email.subject, email.body);
+
+            // Remove the email from the database after sending
+            await EmailSchedule.findByIdAndDelete(email._id);
+        }
+    } catch (error) {
+        console.error('checkAndSendEmails function : Error checking and sending emails:', error);
+    }
+    console.log("checkAndSendEmails function : Check complete");
+}
+
+setInterval(checkAndSendEmails,15000);
