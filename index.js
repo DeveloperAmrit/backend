@@ -10,24 +10,22 @@ const nodemailer = require('nodemailer');
 // Middleware
 app.use(cors());
 app.use(express.json());
+mongoose.set('debug', true);
+// MongoDB connection
 
-let isMongoDBConnected = false;
-
-
-const uri =  process.env.URI;
-
-if(!uri){
-    console.log("index.js : uri not found");
+async function connectToMongoDB() {
+    try {
+        await mongoose.connect(process.env.URI, { serverSelectionTimeoutMS: 30000 });
+        console.log('Connected to MongoDB');
+        isMongoDBConnected = true;
+    } catch (err) {
+        console.error('MongoDB connection error:', err);
+        isMongoDBConnected = false;
+        setTimeout(connectToMongoDB, 5000); // Retry after 5 seconds
+    }
 }
 
-// MongoDB connection
-const mongoURI = uri;
-mongoose.connect(mongoURI)
-    .then(() => {
-        console.log('Connected to MongoDB')
-        isMongoDBConnected = true;
-    })
-    .catch((err) => console.log('MongoDB connection error:', err));
+connectToMongoDB();
 
 // Define a Mongoose schema and model for email schedules
 const emailScheduleSchema = new mongoose.Schema({
@@ -119,11 +117,10 @@ async function checkAndSendEmails() {
         let currentTime = new Date();
         currentTime.setHours(currentTime.getHours() + 5); // Add 5 hours
         currentTime.setMinutes(currentTime.getMinutes() + 30); // Add 30 minutes
-        let currentTime_ = currentTime.toISOString().slice(0, 16); // Format to 'YYYY-MM-DDTHH:MM'
 
         // Fetch emails that need to be sent
-        if(isMongoDBConnected){
-            const emailsToSend = await EmailSchedule.find({ send_datetime: { $lte: currentTime_ } });
+        if(mongoose.connection.readyState === 1){
+            const emailsToSend = await EmailSchedule.find({ send_datetime: { $lte: currentTime } });
     
             console.log("checkAndSendEmails function : ",emailsToSend);
             for (const email of emailsToSend) {
@@ -147,10 +144,12 @@ async function checkAndSendEmails() {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port http://localhost:${PORT}/`);
-    setInterval(()=>{
-        console.log("Set Interval working")
-        checkAndSendEmails();
-    },5000);
+    async function scheduleEmailCheck() {
+        await checkAndSendEmails();
+        setTimeout(scheduleEmailCheck, 15000); // Wait 15 seconds before the next execution
+    }
+    
+    scheduleEmailCheck();
 });
 
 
