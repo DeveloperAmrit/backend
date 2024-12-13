@@ -38,10 +38,6 @@ const emailScheduleSchema = new mongoose.Schema({
 
 const EmailSchedule = mongoose.model('EmailSchedule', emailScheduleSchema);
 
-// Function to send an email
-const nodemailer = require('nodemailer');
-require('dotenv').config();
-const mongoose = require('mongoose');
 
 async function connectToMongoDB() {
     try {
