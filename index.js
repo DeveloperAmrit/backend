@@ -38,7 +38,8 @@ const emailScheduleSchema = new mongoose.Schema({
 
 const EmailSchedule = mongoose.model('EmailSchedule', emailScheduleSchema);
 
-async function sendEmail(toEmail, ccEmails, bccEmails, subject, body) {
+async function sendEmail(toEmail, ccEmails, bccEmails, subject, body,messages) {
+    messages.push("sendEmail function : Triggered sendEmail function")
     console.log("sendEmail function : Triggered sendEmail function");
 
 
@@ -46,6 +47,7 @@ async function sendEmail(toEmail, ccEmails, bccEmails, subject, body) {
     const password = process.env.PASSWORD;
 
     if(!loginEmail || !password){
+        messages.push("sendEmail function : Login email and password not found.")
         console.log("sendEmail function : Login email and password not found.");
         return;
     }
@@ -70,10 +72,13 @@ async function sendEmail(toEmail, ccEmails, bccEmails, subject, body) {
     };
 
     try {
+        messages.push("sendEmail function : Sending mail to ${toEmail}")
         console.log(`sendEmail function : Sending mail to ${toEmail}`);
         await transporter.sendMail(mailOptions);
+        messages.push("sendEmail function : Email sent to ${toEmail}")
         console.log(`sendEmail function : Email sent to ${toEmail}`);
     } catch (error) {
+        messages.push(`sendEmail function : Error sending email to ${toEmail}`)
         console.log(`sendEmail function : Error sending email to ${toEmail}:`, error);
     }
 }
@@ -95,8 +100,8 @@ async function checkAndSendEmails(messages) {
             console.log("checkAndSendEmails function : ",emailsToSend);
             for (const email of emailsToSend) {
                 console.log("Triggering sendEmail function");
-                await sendEmail(email.to_email, email.cc_emails, email.bcc_emails, email.subject, email.body);
-    
+                messages.push("Triggering sendEmail function")
+                await sendEmail(email.to_email, email.cc_emails, email.bcc_emails, email.subject, email.body,messages);
                 // Remove the email from the database after sending
                 await EmailSchedule.findByIdAndDelete(email._id);
             }
