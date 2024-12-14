@@ -23,8 +23,8 @@ async function connectToMongoDB(messages) {
         setTimeout(connectToMongoDB, 15000); // Retry after 5 seconds
     }
 }
-
-connectToMongoDB();
+const msg = [];
+connectToMongoDB(msg);
 
 // Define a Mongoose schema and model for email schedules
 const emailScheduleSchema = new mongoose.Schema({
