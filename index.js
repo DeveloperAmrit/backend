@@ -12,13 +12,15 @@ app.use(express.json());
 mongoose.set('debug', true);
 // MongoDB connection
 
-async function connectToMongoDB() {
+async function connectToMongoDB(messages) {
+    messages.push("Trying to connect to mongoDB")
+    console.log("Trying to connect to mongoDB")
     try {
         await mongoose.connect(process.env.URI, { serverSelectionTimeoutMS: 30000 });
         console.log('Connected to MongoDB');
     } catch (err) {
         console.error('MongoDB connection error:', err);
-        setTimeout(connectToMongoDB, 5000); // Retry after 5 seconds
+        setTimeout(connectToMongoDB, 15000); // Retry after 5 seconds
     }
 }
 
@@ -35,19 +37,6 @@ const emailScheduleSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const EmailSchedule = mongoose.model('EmailSchedule', emailScheduleSchema);
-
-
-async function connectToMongoDB() {
-    try {
-        await mongoose.connect(process.env.URI, { serverSelectionTimeoutMS: 30000 });
-        console.log('Connected to MongoDB');
-        isMongoDBConnected = true;
-    } catch (err) {
-        console.error('MongoDB connection error:', err);
-        isMongoDBConnected = false;
-        setTimeout(connectToMongoDB, 5000); // Retry after 5 seconds
-    }
-}
 
 async function sendEmail(toEmail, ccEmails, bccEmails, subject, body) {
     console.log("sendEmail function : Triggered sendEmail function");
@@ -90,8 +79,8 @@ async function sendEmail(toEmail, ccEmails, bccEmails, subject, body) {
 }
 
 // Function to check and send emails
-async function checkAndSendEmails() {
-
+async function checkAndSendEmails(messages) {
+    messages.push("checkAndSendEmails function : Checking for scheduled emails...");
     console.log("checkAndSendEmails function : Checking for scheduled emails...")
     try {
             
@@ -102,7 +91,7 @@ async function checkAndSendEmails() {
         // Fetch emails that need to be sent
         if(mongoose.connection.readyState === 1){
             const emailsToSend = await EmailSchedule.find({ send_datetime: { $lte: currentTime } });
-    
+            messages.push(`checkAndSendEmails function : ${emailsToSend}`)
             console.log("checkAndSendEmails function : ",emailsToSend);
             for (const email of emailsToSend) {
                 console.log("Triggering sendEmail function");
@@ -125,17 +114,14 @@ async function checkAndSendEmails() {
 }
 
 
-function handler() {
+async function handler(messages) {
+    messages.push("Cron job invoked at:", new Date());
+    messages.push("Processing function logic...");
     console.log("Cron job invoked at:", new Date());
-    console.log("Processing function logic...");
     
     // Function logic here...
-    async function trigger() {
-        await connectToMongoDB();
-        await checkAndSendEmails();
-    }
-
-    trigger();
+    await connectToMongoDB(messages);
+    await checkAndSendEmails(messages);
 }
 
 
@@ -171,9 +157,11 @@ app.post("/schedule-email", async (req, res) => {
 });
 
 app.get("/emailSender",async (req,res)=>{
+    const messages=[];
     try{
-        handler();
-        res.status(200).json({message : "Triggered handler"});
+        messages.push("Triggering handler");
+        await handler(messages);
+        res.status(200).json({messages});
     }
     catch (error){
         res.status(500).json({message: "Failed to trigger handler",error : `${error}`});
